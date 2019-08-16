@@ -2,11 +2,12 @@ import codecs
 from tqdm import tqdm
 
 class Graph(object):
-    def __init__(self, filepath, is_primary_key = False):
+    def __init__(self, filepath, is_primary_key = False, init_type= "edge"):
 
         '''
         :param filepath: csv 文件的路径
         :param is_primary_key: 是否需要 primaryKey
+        :param init_type: edge 表示按照边进行初始化, vertex 表示按照点进行初始化
         '''
 
         self.filepath = filepath
@@ -16,6 +17,7 @@ class Graph(object):
         self.vertex_num = 0
         self.edge_num = 0
         self.neighbor_map = {}
+        self.init_type = init_type
 
     def init_graph(self):
         f = self.open_csv()
@@ -29,7 +31,12 @@ class Graph(object):
                 vertices_ = [from_index, to_index]
                 for i, vertex_index in enumerate(vertices_):
                     vertex = self.vertices.get(vertex_index, Vertex(vertex_index))
-                    vertex.add_community(edge_index)
+                    if self.init_type == "edge":
+                        vertex.add_community(edge_index)
+                    else:
+                        communities = vertex.get_communities()
+                        if len(communities)== 0:
+                            vertex.add_community(vertex.get_id())
                     self.vertices[vertex_index] = vertex
                     neighbors = self.neighbor_map.get(vertex_index, [])
                     neighbors.append(vertices_[1-i])
@@ -52,6 +59,8 @@ class Graph(object):
     def get_vertices(self):
         return self.vertices
 
+    def get_neighbor_by_id(self, vertex_id):
+        return self.neighbor_map.get(vertex_id, [])
 
 def parse_line(line):
     from_index, to_index, primary_key = line.strip().split(",")
@@ -79,6 +88,9 @@ class Vertex(object):
 
     def get_id(self):
         return self.vertex_id
+
+    def get_communities(self):
+        return self.communities
 
     def get_community_num(self):
         return len(self.communities)
